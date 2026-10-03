@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap">    <link rel="stylesheet" href="../src/index.css">
+  </head>
+<body>
+<header class="site-header">
+  <div class="site-header-inner">
+    <a class="site-logo" href="../index.html">TerraState Guardian</a>
+    <nav class="site-nav" aria-label="Primary">
+        <a href="../index.html">Home</a>
+    </nav>
+  </div>
+</header>
+<main class="site-main">
+{% extends "base.html" %}
+
+{% block title %}Upload State - TerraState Guardian{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Upload Terraform State</h1>
+    <p>Upload a Terraform state JSON file to track infrastructure changes</p>
+</div>
+
+<div class="upload-container">
+    <form method="POST" enctype="multipart/form-data" class="upload-form">
+        <div class="form-section">
+            <h2>Project Selection</h2>
+            
+            <div class="form-group">
+                <label>
+                    <input type="radio" name="project_mode" value="existing" checked onchange="toggleProjectMode()">
+                    Select Existing Project
+                </label>
+                <label>
+                    <input type="radio" name="project_mode" value="new" onchange="toggleProjectMode()">
+                    Create New Project
+                </label>
+            </div>
+
+            <div id="existing-project" class="form-group">
+                <label for="project_name">Project</label>
+                <select id="project_name" name="project_name">
+                    <option value="">-- Select Project --</option>
+                    {% for project in projects %}
+                    <option value="{{ project.name }}">{{ project.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div id="new-project" class="form-group" style="display: none;">
+                <label for="new_project_name">New Project Name</label>
+                <input type="text" id="new_project_name" name="new_project_name" placeholder="e.g., web-application">
+                
+                <label for="project_description">Description (optional)</label>
+                <textarea id="project_description" name="project_description" rows="3" placeholder="Brief description of this project"></textarea>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h2>Environment</h2>
+            <div class="form-group">
+                <label for="environment">Environment</label>
+                <select id="environment" name="environment" required>
+                    <option value="">-- Select Environment --</option>
+                    {% for env in environments %}
+                    <option value="{{ env.name }}">{{ env.name|upper }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h2>State File</h2>
+            <div class="form-group">
+                <label for="state_file">Terraform State JSON File</label>
+                <div class="file-upload">
+                    <input type="file" id="state_file" name="state_file" accept=".json" required onchange="showFileName(this)">
+                    <label for="state_file" class="file-upload-label">
+                        <span class="file-upload-icon">📁</span>
+                        <span class="file-upload-text">Choose file or drag here</span>
+                    </label>
+                    <div id="file-name" class="file-name"></div>
+                </div>
+                <small class="form-help">Upload your terraform.tfstate file (JSON format, max 10MB)</small>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Upload State File</button>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+
+    <div class="upload-info">
+        <h3>ℹ️ How it works</h3>
+        <ol>
+            <li>Select or create a project to organize your infrastructure</li>
+            <li>Choose the environment (dev, staging, or prod)</li>
+            <li>Upload your Terraform state JSON file</li>
+            <li>The system will parse resources and detect drift automatically</li>
+            <li>If this is the first upload for this project-environment, it becomes the baseline</li>
+            <li>Subsequent uploads are compared against the baseline to detect drift</li>
+        </ol>
+
+        <h3>📋 State File Requirements</h3>
+        <ul>
+            <li>Must be a valid JSON file</li>
+            <li>Should be a Terraform state file (terraform.tfstate)</li>
+            <li>Supports Terraform 0.12+ format</li>
+            <li>Maximum file size: 10MB</li>
+        </ul>
+    </div>
+</div>
+
+<script>
+function toggleProjectMode() {
+    const mode = document.querySelector('input[name="project_mode"]:checked').value;
+    const existingDiv = document.getElementById('existing-project');
+    const newDiv = document.getElementById('new-project');
+    const existingSelect = document.getElementById('project_name');
+    const newInput = document.getElementById('new_project_name');
+    
+    if (mode === 'existing') {
+        existingDiv.style.display = 'block';
+        newDiv.style.display = 'none';
+        existingSelect.required = true;
+        newInput.required = false;
+    } else {
+        existingDiv.style.display = 'none';
+        newDiv.style.display = 'block';
+        existingSelect.required = false;
+        newInput.required = true;
+    }
+}
+
+function showFileName(input) {
+    const fileNameDiv = document.getElementById('file-name');
+    if (input.files && input.files[0]) {
+        const fileName = input.files[0].name;
+        const fileSize = (input.files[0].size / 1024).toFixed(2);
+        fileNameDiv.innerHTML = `<strong>${fileName}</strong> (${fileSize} KB)`;
+        fileNameDiv.style.display = 'block';
+    }
+}
+</script>
+{% endblock %}
+</main>
+<footer class="site-footer">
+  <div class="container">© 2026 TerraState Guardian. Built with Alviora AI.</div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap">    <link rel="stylesheet" href="../src/index.css">
+  </head>
+<body>
+<header class="site-header">
+  <div class="site-header-inner">
+    <a class="site-logo" href="../index.html">TerraState Guardian</a>
+    <nav class="site-nav" aria-label="Primary">
+        <a href="../index.html">Home</a>
+    </nav>
+  </div>
+</header>
+<main class="site-main">
+{% extends "base.html" %}
+
+{% block title %}Dashboard - TerraState Guardian{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Dashboard</h1>
+    <p>Overview of Terraform state monitoring across all environments</p>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon">📊</div>
+        <div class="stat-content">
+            <h3>{{ projects|length }}</h3>
+            <p>Projects</p>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon">📸</div>
+        <div class="stat-content">
+            <h3>{{ total_snapshots }}</h3>
+            <p>State Snapshots</p>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon">⚠️</div>
+        <div class="stat-content">
+            <h3>{{ total_drift_events }}</h3>
+            <p>Drift Events</p>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon">🌍</div>
+        <div class="stat-content">
+            <h3>{{ environments|length }}</h3>
+            <p>Environments</p>
+        </div>
+    </div>
+</div>
+
+<div class="dashboard-grid">
+    <div class="dashboard-section">
+        <h2>Environment Overview</h2>
+        <div class="env-cards">
+            {% for env in environments %}
+            <div class="env-card">
+                <h3>{{ env.name|upper }}</h3>
+                <div class="env-stats">
+                    <div class="env-stat">
+                        <span class="label">Snapshots:</span>
+                        <span class="value">{{ env_stats.get(env.name, {}).get('snapshots', 0) }}</span>
+                    </div>
+                    <div class="env-stat">
+                        <span class="label">Resources:</span>
+                        <span class="value">{{ env_stats.get(env.name, {}).get('resources', 0) }}</span>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="dashboard-section">
+        <h2>Recent State Snapshots</h2>
+        {% if recent_snapshots %}
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Project</th>
+                        <th>Environment</th>
+                        <th>Resources</th>
+                        <th>Uploaded</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for snapshot in recent_snapshots %}
+                    <tr>
+                        <td><strong>{{ snapshot.project_name }}</strong></td>
+                        <td><span class="badge badge-{{ snapshot.environment_name }}">{{ snapshot.environment_name }}</span></td>
+                        <td>{{ snapshot.resource_count }}</td>
+                        <td>{{ snapshot.uploaded_at }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted">No snapshots yet. <a href="{{ url_for('upload') }}">Upload your first state file</a></p>
+        {% endif %}
+    </div>
+
+    <div class="dashboard-section">
+        <h2>Recent Drift Events</h2>
+        {% if recent_drift %}
+        <div class="drift-list">
+            {% for event in recent_drift %}
+            <div class="drift-item drift-{{ event.drift_type }}">
+                <div class="drift-icon">
+                    {% if event.drift_type == 'added' %}➕
+                    {% elif event.drift_type == 'removed' %}➖
+                    {% else %}🔄{% endif %}
+                </div>
+                <div class="drift-details">
+                    <strong>{{ event.project_name }} / {{ event.environment_name }}</strong>
+                    <p>{{ event.details }}</p>
+                    <small>{{ event.detected_at }}</small>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <a href="{{ url_for('drift') }}" class="btn btn-secondary">View All Drift Events</a>
+        {% else %}
+        <p class="text-muted">No drift detected yet.</p>
+        {% endif %}
+    </div>
+
+    <div class="dashboard-section">
+        <h2>Projects</h2>
+        {% if projects %}
+        <div class="project-list">
+            {% for project in projects %}
+            <div class="project-item">
+                <h3>{{ project.name }}</h3>
+                <p>{{ project.description or 'No description' }}</p>
+            </div>
+            {% endfor %}
+        </div>
+        <a href="{{ url_for('projects') }}" class="btn btn-secondary">View All Projects</a>
+        {% else %}
+        <p class="text-muted">No projects yet.</p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="quick-actions">
+    <h2>Quick Actions</h2>
+    <div class="action-buttons">
+        <a href="{{ url_for('upload') }}" class="btn btn-primary">📤 Upload State File</a>
+        <a href="{{ url_for('compare') }}" class="btn btn-secondary">🔍 Compare States</a>
+        <a href="{{ url_for('resources') }}" class="btn btn-secondary">📦 View Resources</a>
+        <a href="/api/export-drift" class="btn btn-secondary">💾 Export Drift Report</a>
+    </div>
+</div>
+{% endblock %}
+</main>
+<footer class="site-footer">
+  <div class="container">© 2026 TerraState Guardian. Built with Alviora AI.</div>
+</footer>
+</body>
+</html>
